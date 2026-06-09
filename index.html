@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invitation Tracker</title>
+  <style>
+    :root {
+      --bg:#f7f3ef; --text:#241815; --muted:#756761; --line:#e6d8cf;
+      --brand:#8b1e3f; --brand2:#b74767; --ok:#087443; --info:#31527a; --danger:#b42318;
+      --shadow:0 10px 28px rgba(40,20,10,.08); --radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:radial-gradient(circle at top left,#fff7ed,var(--bg) 45%);color:var(--text)}
+    header{max-width:1320px;margin:auto;padding:24px 18px 10px}
+    h1{margin:0;font-size:clamp(26px,4vw,42px);letter-spacing:-.04em}
+    .app{max-width:1320px;margin:auto;padding:14px 18px 40px;display:grid;grid-template-columns:390px 1fr;gap:18px}
+    @media(max-width:980px){.app{grid-template-columns:1fr}}
+    .panel,.tree-panel,.summary-card{background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .panel{padding:18px;position:sticky;top:12px;align-self:start}
+    @media(max-width:980px){.panel{position:static}}
+    .section-title{font-size:18px;font-weight:850;margin:0 0 12px}
+    label{display:block;font-size:13px;color:var(--muted);margin:13px 0 6px;font-weight:750}
+    input,select,textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 12px;font:inherit;font-size:16px;background:#fff;color:var(--text);outline:none}
+    input:focus,select:focus,textarea:focus{border-color:var(--brand2);box-shadow:0 0 0 3px rgba(183,71,103,.15)}
+    textarea{min-height:62px;resize:vertical}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .buttons{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}
+    button{border:0;border-radius:999px;padding:10px 14px;font-weight:800;cursor:pointer;font:inherit;transition:transform .08s ease}
+    button:active{transform:scale(.98)}
+    .primary{background:var(--brand);color:#fff}.secondary{background:#efe5df;color:var(--text)}.ghost{background:transparent;color:var(--brand);border:1px solid var(--line)}.danger{background:#fee4e2;color:var(--danger)}.mini{font-size:12px;padding:7px 10px}
+    .helpbox{background:#fffaf7;border:1px solid var(--line);border-radius:14px;padding:12px;margin:12px 0 16px;color:var(--muted);font-size:13px;line-height:1.45}
+    .helpbox b{color:var(--text)}
+    .right{display:grid;gap:18px}
+    .summary{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(220px,360px));
+      gap:12px;
+      justify-content:start;
+    }
+    @media(max-width:720px){.summary{grid-template-columns:1fr}}
+    .summary-card{padding:18px}
+    .invited-card{border-color:#d8b9c6;background:linear-gradient(135deg,#fff,#fff7fb)}
+    .total-card{border-color:#cfd8ea;background:linear-gradient(135deg,#fff,#f7fbff)}
+    .num{font-size:42px;font-weight:950;letter-spacing:-.05em;color:var(--brand)}
+    .total-card .num{color:#31527a}
+    .cap{color:var(--muted);font-size:14px;margin-top:2px;font-weight:800}
+    .tree-panel{padding:18px;overflow:hidden}
+    .toolbar{display:flex;flex-wrap:wrap;gap:9px;align-items:center;justify-content:space-between;margin-bottom:14px}
+    .toolbar-left,.toolbar-right{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+    .search{max-width:330px}
+    .toolbar-right{
+      flex-wrap:nowrap;
+      justify-content:flex-end;
+    }
+    .toolbar-right .search{
+      flex:1 1 260px;
+      min-width:180px;
+    }
+    .toolbar-right .fullscreen-btn{
+      flex:0 0 auto;
+      white-space:nowrap;
+    }
+    .view-toggle{display:inline-flex;background:#efe5df;padding:4px;border-radius:999px;gap:4px}
+    .view-toggle button{padding:7px 11px;background:transparent;color:var(--muted);font-size:13px}
+    .view-toggle button.active{background:#fff;color:var(--brand);box-shadow:0 2px 8px rgba(40,20,10,.08)}
+    .fullscreen-btn{
+      background:#fff;
+      border-color:var(--brand2);
+      color:var(--brand);
+      box-shadow:0 2px 8px rgba(40,20,10,.06);
+    }
+    .tree{list-style:none;padding-left:0;margin:0}.tree ul{list-style:none;padding-left:28px;margin:8px 0 0;border-left:2px dashed #eadbd2}.node{margin:8px 0}
+    .node-card{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
+      align-items:start;
+      padding:13px;
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:#fff;
+      position:relative;
+    }
+    .node-card.selected{border-color:var(--brand2);box-shadow:0 0 0 3px rgba(183,71,103,.13)}
+    .node-card.row-invited,
+    .family-card.row-invited{
+      background:linear-gradient(135deg,#ecfdf3,#ffffff 70%);
+      border-color:#86efac;
+      position:relative;
+    }
+    .family-card.row-invited{
+      padding-right:44px;
+    }
+    .node-name{font-weight:900;font-size:16px;padding-right:6px}
+    .meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px}
+    .pill{font-size:12px;padding:4px 8px;border-radius:999px;background:#f4ebe6;color:var(--muted);font-weight:800}
+    .added-pill{background:#dcfae6;color:#087443;max-width:100%;white-space:normal}
+    .excluded-pill{background:#f4ebe6;color:#756761;max-width:100%;white-space:normal}
+    .deduct-pill{background:#eef4ff;color:#31527a}
+    .pill.counted{background:#dcfae6;color:var(--ok)}.pill.zero{background:#eef4ff;color:var(--info)}.pill.inlaws{background:#fce7f3;color:#9d174d}
+    .node-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      justify-content:flex-end;
+      align-items:center;
+      margin-left:auto;
+    }
+    .card-head{
+      display:block;
+      width:100%;
+    }
+    .status-row{
+      margin-top:8px;
+      display:flex;
+      align-items:center;
+      gap:7px;
+      flex-wrap:wrap;
+    }
+    .status-row .status-check{
+      flex:none;
+    }
+    .list-status-corner .status-check{
+      position:static;
+      flex:none;
+    }
+    .list-top-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      width:100%;
+    }
+    .list-status-corner{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-shrink:0;
+    }
+    .node-card.has-list-status{
+      padding-top:13px;
+    }
+    .contact-line{
+      margin-top:7px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      color:var(--muted);
+      font-size:13px;
+      font-weight:750;
+      flex-wrap:wrap;
+    }
+    .contact-label{
+      background:#f4ebe6;
+      color:var(--muted);
+      border-radius:999px;
+      padding:4px 8px;
+      font-size:12px;
+      font-weight:900;
+    }
+    .contact-link{
+      color:var(--brand);
+      font-weight:900;
+      text-decoration:none;
+      border-bottom:1px dashed rgba(139,30,63,.35);
+    }
+    .row-bottom{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-top:10px;
+      padding-top:10px;
+      border-top:1px dashed var(--line);
+    }
+    .row-bottom .meta{
+      margin-top:0;
+      flex:1;
+      min-width:160px;
+    }
+    .status-check{
+      position:absolute;
+      top:10px;
+      right:12px;
+      width:23px;
+      height:23px;
+      border-radius:50%;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      background:#16a34a;
+      color:#fff;
+      font-weight:950;
+      font-size:14px;
+      box-shadow:0 4px 10px rgba(22,163,74,.25);
+      z-index:6;
+    }
+    .status-inline{
+      width:auto;
+      min-width:132px;
+      border-radius:999px;
+      padding:7px 10px;
+      font-size:12px;
+      font-weight:900;
+      border:1px solid var(--line);
+      color:var(--muted);
+    }
+    .status-inline:focus{border-color:var(--brand2);box-shadow:0 0 0 3px rgba(183,71,103,.12)}
+    .status-not-contacted{background:#f4ebe6;color:#6f625c;border-color:#e2d4cc}
+    .status-invited{background:#dcfae6;color:#087443;border-color:#86efac}
+    .status-confirmed{background:#dcfae6;color:#087443;border-color:#abefc6}
+    .status-maybe{background:#fff4d6;color:#92400e;border-color:#facc15}
+    .status-not-coming{background:#fee4e2;color:#b42318;border-color:#fecaca}
+    .note{color:var(--muted);font-size:13px;margin-top:8px;line-height:1.35}
+    .empty{border:1px dashed var(--line);border-radius:16px;padding:24px;color:var(--muted);text-align:center;background:#fffaf7}
+    .file-input{display:none}.footer-note{margin-top:12px;font-size:12px;color:var(--muted)}.divider{border:0;border-top:1px solid var(--line);margin:18px 0}
+    .family-view-wrap{
+      overflow:auto;
+      padding:24px 18px 34px;
+      background:#fff8f4;
+      border:1px solid var(--line);
+      border-radius:18px;
+      min-height:260px;
+      cursor:grab;
+      scroll-behavior:smooth;
+    }
+    .family-view-wrap.dragging{
+      cursor:grabbing;
+      user-select:none;
+      scroll-behavior:auto;
+    }
+    .family-view-wrap select,
+    .family-view-wrap button,
+    .family-view-wrap a,
+    .family-view-wrap input{
+      cursor:auto;
+    }
+    .family-canvas{
+      position:relative;
+      min-width:max-content;
+      padding:16px 18px;
+    }
+    .tree-svg{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      pointer-events:none;
+      overflow:visible;
+      z-index:1;
+    }
+    .tree-svg path{
+      fill:none;
+      stroke:#dac9c0;
+      stroke-width:2.25;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+    }
+    .family-forest{
+      position:relative;
+      z-index:2;
+      display:flex;
+      flex-direction:column;
+      gap:34px;
+      align-items:flex-start;
+      min-width:max-content;
+    }
+    .org-tree{
+      display:flex;
+      flex-direction:row;
+      align-items:center;
+      position:relative;
+    }
+    .org-children{
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+      justify-content:center;
+      align-items:flex-start;
+      position:relative;
+      padding-left:46px;
+      margin-left:10px;
+    }
+    .family-card{
+      width:280px;
+      min-height:158px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:#fff;
+      box-shadow:0 10px 22px rgba(40,20,10,.07);
+      padding:14px;
+      text-align:left;
+      cursor:pointer;
+      position:relative;
+      z-index:2;
+    }
+    .family-card:hover,.family-card.selected{border-color:var(--brand2)}
+    .family-card.selected{box-shadow:0 0 0 3px rgba(183,71,103,.13),0 10px 22px rgba(40,20,10,.07)}
+    .family-card .title{
+      font-weight:900;
+      line-height:1.25;
+      margin-bottom:0;
+      min-width:0;
+      flex:1;
+      overflow-wrap:break-word;
+    }
+    .family-card .status-inline{
+      min-width:140px;
+      max-width:100%;
+      padding:7px 10px;
+    }
+    .family-card .small{color:var(--muted);font-size:12px;line-height:1.35;margin-top:4px}
+    .tree-panel:fullscreen{
+      width:100vw;
+      height:100vh;
+      overflow:auto;
+      border-radius:0;
+      padding:18px;
+      background:#fff8f4;
+    }
+    .tree-panel:fullscreen .family-view-wrap{
+      height:calc(100vh - 95px);
+      max-height:none;
+    }
+    .tree-panel:fullscreen .tree{
+      max-width:1200px;
+      margin:auto;
+    }
+    .fullscreen-btn{
+      background:#fff;
+      border-color:var(--brand2);
+      color:var(--brand);
+      box-shadow:0 2px 8px rgba(40,20,10,.06);
+    }
+    .fullscreen-active-label{
+      display:none;
+      font-size:12px;
+      color:var(--muted);
+      font-weight:800;
+    }
+    .tree-panel:fullscreen .fullscreen-active-label{
+      display:inline;
+    }
+
+    @media(max-width:900px){
+      header{
+        padding:18px 14px 6px;
+      }
+      .app{
+        padding:10px 12px 28px;
+        gap:12px;
+      }
+      .panel,
+      .tree-panel,
+      .summary-card{
+        border-radius:16px;
+      }
+      .panel{
+        padding:14px;
+      }
+      .toolbar{
+        align-items:flex-start;
+        flex-direction:column;
+      }
+      .toolbar-left,
+      .toolbar-right{
+        width:100%;
+      }
+      .toolbar-right{
+        flex-wrap:nowrap;
+        align-items:center;
+      }
+      .search{
+        max-width:none;
+        width:auto;
+      }
+      .toolbar-right .fullscreen-btn{
+        width:auto;
+        flex:0 0 auto;
+      }
+    }
+
+    @media(max-width:720px){
+      h1{
+        font-size:30px;
+      }
+      .row{
+        grid-template-columns:1fr;
+      }
+      .buttons{
+        gap:8px;
+      }
+      .buttons button{
+        flex:1 1 auto;
+      }
+      .view-toggle{
+        width:100%;
+        flex-wrap:wrap;
+      }
+      .view-toggle button{
+        flex:1;
+      }
+
+      .summary{
+        grid-template-columns:1fr;
+      }
+      .summary-card{
+        padding:14px;
+      }
+      .num{
+        font-size:34px;
+      }
+      .tree-panel{
+        padding:12px;
+      }
+      .list-top-row{
+        align-items:flex-start;
+        flex-direction:column;
+        gap:8px;
+      }
+      .list-status-corner{
+        width:100%;
+        justify-content:space-between;
+      }
+      .list-status-corner .status-inline{
+        flex:1;
+        min-width:0;
+      }
+      .status-inline{
+        min-width:0;
+        max-width:100%;
+      }
+      .row-bottom{
+        align-items:stretch;
+        flex-direction:column;
+      }
+      .row-bottom .meta{
+        min-width:0;
+      }
+      .node-actions{
+        justify-content:flex-start!important;
+        margin-left:0;
+      }
+      .node-actions button{
+        flex:1 1 calc(50% - 6px);
+      }
+      .node-card{
+        padding:12px;
+      }
+      .contact-line{
+        align-items:flex-start;
+      }
+      .contact-link{
+        word-break:break-word;
+      }
+      .family-view-wrap{
+        max-height:70vh;
+        padding:14px 10px 22px;
+      }
+      .family-canvas{
+        padding:10px;
+      }
+      .family-card{
+        width:240px;
+        min-height:150px;
+        padding:12px;
+      }
+      .family-card .status-inline{
+        width:100%;
+      }
+      .org-children{
+        gap:14px;
+        padding-left:28px;
+        margin-left:6px;
+      }
+      .family-forest{
+        gap:24px;
+      }
+    }
+
+    @media(max-width:420px){
+      header{
+        padding:16px 10px 4px;
+      }
+      .app{
+        padding:8px 8px 24px;
+      }
+      h1{
+        font-size:26px;
+      }
+      .node-actions button{
+        flex:1 1 100%;
+      }
+      .toolbar-left{
+        gap:7px;
+      }
+      .toolbar-left > button{
+        flex:1 1 calc(50% - 6px);
+      }
+      .toolbar-right .search{
+        min-width:0;
+      }
+      .toolbar-right .fullscreen-btn{
+        padding-left:10px;
+        padding-right:10px;
+      }
+      .fullscreen-btn{
+        order:2;
+      }
+      .family-card{
+        width:220px;
+      }
+      .status-check{
+        width:21px;
+        height:21px;
+        font-size:13px;
+      }
+    }
+
+    @media print{body{background:white}header,.panel,.summary,.toolbar-right,.node-actions{display:none!important}.app{display:block;max-width:none}.tree-panel{box-shadow:none;border:none}.family-view-wrap{overflow:visible;border:none}}
+  </style>
+</head>
+<body>
+<header>
+  <h1>Invitation Tracker</h1>
+</header>
+
+<main class="app">
+  <aside class="panel">
+    <h2 class="section-title" id="formTitle">Add entry</h2>
+    <input type="hidden" id="editId">
+    <input type="hidden" id="entryKind" value="normal">
+
+    <label for="parent">Add under</label>
+    <select id="parent"><option value="">Main household</option></select>
+
+    <label for="name">Name</label>
+    <input id="name" placeholder="Example: Boro Aunty household">
+
+    <div class="row">
+      <div>
+        <label for="count">Members</label>
+        <input id="count" type="number" min="0" value="2">
+      </div>
+      <div>
+        <label for="phone">Contact number</label>
+        <input id="phone" inputmode="tel" placeholder="01XXXXXXXXX">
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="autoSons">Number of sons</label>
+        <input id="autoSons" type="number" min="0" value="0">
+      </div>
+      <div>
+        <label for="autoDaughters">Number of daughters</label>
+        <input id="autoDaughters" type="number" min="0" value="0">
+      </div>
+    </div>
+
+    <div class="buttons">
+      <button class="primary" onclick="saveEntry()">Save</button>
+      <button class="secondary" onclick="resetForm()">Clear</button>
+      <button class="ghost" onclick="loadExample()">Load example</button>
+    </div>
+
+    <hr class="divider">
+
+    <h2 class="section-title">Backup / Export</h2>
+    <div class="buttons">
+      <button class="secondary" onclick="exportJSON()">Export data</button>
+      <button class="secondary" onclick="exportCSV()">Export CSV</button>
+      <button class="ghost" onclick="document.getElementById('importFile').click()">Import data</button>
+      <button class="danger" onclick="clearAll()">Clear all</button>
+    </div>
+    <input id="importFile" class="file-input" type="file" accept=".json" onchange="importJSON(event)">
+    <div class="footer-note">Export your data to use it later.</div>
+  </aside>
+
+  <section class="right">
+    <div class="summary two-summary">
+      <div class="summary-card invited-card">
+        <div class="num" id="totalGuests">0</div>
+        <div class="cap">Invited members</div>
+      </div>
+      <div class="summary-card total-card">
+        <div class="num" id="totalPeople">0</div>
+        <div class="cap">Total people</div>
+      </div>
+    </div>
+
+    <div class="tree-panel">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <h2 class="section-title" style="margin:0">Invitation view</h2>
+          <div class="view-toggle">
+            <button id="listViewBtn" class="active" onclick="setView('list')">List view</button>
+            <button id="familyViewBtn" onclick="setView('family')">Tree view</button>
+          </div>
+        
+        </div>
+        <div class="toolbar-right">
+          <button class="ghost mini fullscreen-btn" onclick="toggleTreeFullscreen()">Fullscreen</button>
+          <input class="search" id="search" placeholder="Search name, phone, status..." oninput="render()">
+        </div>
+      </div>
+      <div id="treeRoot"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+const STORAGE_KEY = "weddingInvitationTree.v58";
+let items = load();
+let currentView = "list";
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+function esc(v){return String(v||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
+
+function normalize(item){
+  let kind = item.kind || "normal";
+  if((item.name || "").toLowerCase().includes("in-law")) kind = "inlaws";
+  if(item.countType === "info" || item.countType === "included") item.count = 0;
+  if(kind === "child") kind = "son";
+  return {
+    id: item.id || uid(),
+    name: item.name || "Unnamed",
+    count: Math.max(0, Number(item.count || 0)),
+    phone: item.phone || "",
+    parentId: item.parentId || "",
+    kind,
+    status: item.status || "Not contacted",
+    notes: ""
+  };
+}
+
+function load(){
+  for(const key of [STORAGE_KEY,"weddingInvitationTree.v57","weddingInvitationTree.v56","weddingInvitationTree.v55","weddingInvitationTree.v54","weddingInvitationTree.v53","weddingInvitationTree.v52","weddingInvitationTree.v51","weddingInvitationTree.v50","weddingInvitationTree.v49","weddingInvitationTree.v48","weddingInvitationTree.v47","weddingInvitationTree.v46","weddingInvitationTree.v45","weddingInvitationTree.v44","weddingInvitationTree.v43","weddingInvitationTree.v42","weddingInvitationTree.v41","weddingInvitationTree.v40","weddingInvitationTree.v39","weddingInvitationTree.v38","weddingInvitationTree.v37","weddingInvitationTree.v36","weddingInvitationTree.v35","weddingInvitationTree.v34","weddingInvitationTree.v33","weddingInvitationTree.v32","weddingInvitationTree.v31","weddingInvitationTree.v30","weddingInvitationTree.v29","weddingInvitationTree.v28","weddingInvitationTree.v27","weddingInvitationTree.v26","weddingInvitationTree.v25","weddingInvitationTree.v24","weddingInvitationTree.v23","weddingInvitationTree.v22","weddingInvitationTree.v21","weddingInvitationTree.v20","weddingInvitationTree.v19","weddingInvitationTree.v18","weddingInvitationTree.v17","weddingInvitationTree.v16","weddingInvitationTree.v15","weddingInvitationTree.v14","weddingInvitationTree.v13","weddingInvitationTree.v12","weddingInvitationTree.v11","weddingInvitationTree.v10","weddingInvitationTree.v9","weddingInvitationTree.v8","weddingInvitationTree.v7","weddingInvitationTree.v6","weddingInvitationTree.v5","weddingInvitationTree.v4","weddingInvitationTree.v3","weddingInvitationTree.v2","weddingInvitationTree.v1"]){
+    try{const data=JSON.parse(localStorage.getItem(key)); if(Array.isArray(data)) return data.map(normalize)}catch{}
+  }
+  return [];
+}
+
+function persist(){localStorage.setItem(STORAGE_KEY,JSON.stringify(items))}
+function getCountValue(item){return Math.max(0, Number(item.count || 0))}
+
+function isSonOrDaughter(item){
+  return ["son", "daughter", "child"].includes(item.kind);
+}
+
+function findParent(item){
+  return items.find(x => x.id === item.parentId);
+}
+
+function ancestorIsCountingThisPerson(item){
+  let parent = findParent(item);
+
+  while(parent){
+    if(isIncludedInInvitedTotal(parent.status) && getCountValue(parent) > 0){
+      return true;
+    }
+    parent = findParent(parent);
+  }
+
+  return false;
+}
+
+function getAlreadyCountedDeduction(item){
+  if(!isSonOrDaughter(item) || getCountValue(item) <= 0) return 0;
+
+  // Subtract only when an invited parent/ancestor is actually counted.
+  // If parent is Not contacted / Not coming, this son/daughter family gets full count.
+  return ancestorIsCountingThisPerson(item) ? 1 : 0;
+}
+
+function getAdjustedGuestCount(item){
+  const raw = getCountValue(item);
+
+  // Son/daughter placeholder case:
+  // If parent is not invited, and the son/daughter row itself is invited,
+  // count the son/daughter as 1 person even if members is 0.
+  if(isSonOrDaughter(item) && raw === 0 && isIncludedInInvitedTotal(item.status)){
+    return ancestorIsCountingThisPerson(item) ? 0 : 1;
+  }
+
+  return Math.max(0, raw - getAlreadyCountedDeduction(item));
+}
+
+function getInvitedTotal(){
+  return items.reduce((sum, item) => {
+    if(!isIncludedInInvitedTotal(item.status)) return sum;
+    return sum + getAdjustedGuestCount(item);
+  }, 0);
+}
+
+function ancestorHasMembers(item){
+  let parent = findParent(item);
+  while(parent){
+    if(getCountValue(parent) > 0) return true;
+    parent = findParent(parent);
+  }
+  return false;
+}
+
+function getAllPeopleAdjustedCount(item){
+  const raw = getCountValue(item);
+  if(raw <= 0) return 0;
+
+  // For total people, avoid double counting son/daughter rows if any parent/ancestor
+  // already has a household count that includes that son/daughter.
+  if(isSonOrDaughter(item) && ancestorHasMembers(item)){
+    return Math.max(0, raw - 1);
+  }
+
+  return raw;
+}
+
+function getTotalPeople(){
+  return items.reduce((sum, item) => sum + getAllPeopleAdjustedCount(item), 0);
+}
+
+function addedMembersText(item){
+  const added = getAdjustedGuestCount(item);
+  if(added <= 0) return "";
+  return `+${added} members`;
+}
+
+function deductionText(item){
+  const deduction = getAlreadyCountedDeduction(item);
+  if(!deduction) return "";
+  return `${getCountValue(item)} family total`;
+}
+
+function adjustedMembersTag(item){
+  const added = getAdjustedGuestCount(item);
+  const raw = getCountValue(item);
+
+  if(!isIncludedInInvitedTotal(item.status)){
+    if(raw <= 0) return "";
+    return `${raw} members, not included`;
+  }
+
+  if(isSonOrDaughter(item) && raw === 0 && added === 1){
+    return `+1 member`;
+  }
+
+  if(raw <= 0 && added <= 0) return "";
+
+  if(getAlreadyCountedDeduction(item)) {
+    const cleanName = String(item.name || "").replace(/\s+family$/i, "");
+    return `+${raw} members (${esc(cleanName)} +${added} members)`;
+  }
+
+  return `+${added} members`;
+}
+
+function memberPillClass(item){
+  return isIncludedInInvitedTotal(item.status) ? "added-pill" : "excluded-pill";
+}
+
+function entryLabel(item){
+  if(item.kind === "inlaws") return "In-laws";
+  if(getCountValue(item) === 0) return "Shown only";
+  return "Counted";
+}
+function entryPillClass(item){
+  if(item.kind === "inlaws") return "inlaws";
+  if(getCountValue(item) === 0) return "zero";
+  return "counted";
+}
+
+function refreshParentOptions(){
+  const parent=document.getElementById("parent");
+  const currentEditId=document.getElementById("editId").value;
+  const currentParent=parent.value;
+  parent.innerHTML='<option value="">Main household</option>';
+  items.filter(x=>x.id!==currentEditId).forEach(item=>{
+    const opt=document.createElement("option"); opt.value=item.id; opt.textContent=item.name; parent.appendChild(opt);
+  });
+  parent.value=currentParent;
+}
+
+function directSonDaughterCounts(parentId){
+  const direct = items.filter(x => (x.parentId || "") === parentId);
+  return {
+    sons: direct.filter(x => ["son", "child"].includes(x.kind)).length,
+    daughters: direct.filter(x => x.kind === "daughter").length
+  };
+}
+
+function createAutoChild(parentId, kind, index){
+  return {
+    id: uid(),
+    name: kind === "daughter" ? `Daughter ${index}` : `Son ${index}`,
+    count: 0,
+    phone: "",
+    parentId,
+    kind,
+    status: "Not contacted",
+    notes: ""
+  };
+}
+
+function saveEntry(){
+  const name=document.getElementById("name").value.trim();
+  if(!name){alert("Please enter a name.");return}
+  const editId=document.getElementById("editId").value;
+  const id=editId||uid();
+
+  const item={
+    id,name,
+    count:Math.max(0,Number(document.getElementById("count").value||0)),
+    phone:document.getElementById("phone").value.trim(),
+    parentId:document.getElementById("parent").value,
+    kind:document.getElementById("entryKind").value || "normal",
+    status:(items.find(x=>x.id===id)?.status || "Not contacted"),
+    notes:""
+  };
+
+  const idx=items.findIndex(x=>x.id===id);
+  if(idx>=0) items[idx]=item; else items.push(item);
+
+  const desiredSons = Math.max(0, Number(document.getElementById("autoSons").value || 0));
+  const desiredDaughters = Math.max(0, Number(document.getElementById("autoDaughters").value || 0));
+  const current = directSonDaughterCounts(id);
+
+  // When editing, do not duplicate existing son/daughter rows. Only add the extra number requested.
+  for(let i = current.sons + 1; i <= desiredSons; i++){
+    items.push(createAutoChild(id, "son", i));
+  }
+
+  for(let i = current.daughters + 1; i <= desiredDaughters; i++){
+    items.push(createAutoChild(id, "daughter", i));
+  }
+
+  persist();
+  resetForm();
+  render();
+}
+
+function editItem(id){
+  const item=items.find(x=>x.id===id); if(!item)return;
+  const childCounts = directSonDaughterCounts(item.id);
+
+  document.getElementById("formTitle").textContent="Edit entry";
+  document.getElementById("editId").value=item.id;
+  document.getElementById("entryKind").value=item.kind || "normal";
+  document.getElementById("name").value=item.name;
+  document.getElementById("count").value=item.count;
+  document.getElementById("phone").value=item.phone||"";
+  document.getElementById("autoSons").value=childCounts.sons;
+  document.getElementById("autoDaughters").value=childCounts.daughters;
+  refreshParentOptions();
+  document.getElementById("parent").value=item.parentId||"";
+  render();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function startAddUnder(parentId,type){
+  resetForm();
+  document.getElementById("parent").value=parentId;
+
+  if(type==="child"){
+    document.getElementById("formTitle").textContent="Add son/daughter family";
+    document.getElementById("entryKind").value="child";
+    document.getElementById("name").placeholder="Example: Bappy bhaiya family";
+    document.getElementById("count").value=0;
+    }
+
+  if(type==="inlaws"){
+    document.getElementById("formTitle").textContent="Add in-laws";
+    document.getElementById("entryKind").value="inlaws";
+    document.getElementById("name").value="In-laws";
+    document.getElementById("count").value=0;
+    }
+
+  document.getElementById("name").focus();
+}
+
+function deleteItem(id){
+  const item=items.find(x=>x.id===id); if(!item)return;
+  const hasChildren=items.some(x=>x.parentId===id);
+  if(!confirm(hasChildren?`Delete "${item.name}" and all branches under it?`:`Delete "${item.name}"?`))return;
+  const ids=new Set([id]); let changed=true;
+  while(changed){changed=false;items.forEach(x=>{if(ids.has(x.parentId)&&!ids.has(x.id)){ids.add(x.id);changed=true}})}
+  items=items.filter(x=>!ids.has(x.id)); persist(); resetForm(); render();
+}
+
+function resetForm(){
+  document.getElementById("formTitle").textContent="Add entry";
+  document.getElementById("editId").value="";
+  document.getElementById("entryKind").value="normal";
+  document.getElementById("parent").value="";
+  document.getElementById("name").value="";
+  document.getElementById("name").placeholder="Example: Boro Aunty household";
+  document.getElementById("count").value=2;
+  document.getElementById("phone").value="";
+  document.getElementById("autoSons").value=0;
+  document.getElementById("autoDaughters").value=0;
+  refreshParentOptions(); render();
+}
+
+function setView(view){
+  currentView=view;
+  document.getElementById("listViewBtn").classList.toggle("active",view==="list");
+  document.getElementById("familyViewBtn").classList.toggle("active",view==="family");
+  render();
+}
+
+function buildTree(parentId=""){return items.filter(x=>(x.parentId||"")===parentId).sort((a,b)=>a.name.localeCompare(b.name))}
+function itemSearchText(x){return `${x.name} ${x.phone||""} ${x.status} ${x.notes||""}`.toLowerCase()}
+function matchesSearch(item,term){
+  if(!term)return true;
+  if(itemSearchText(item).includes(term))return true;
+  let current=item;
+  while(current&&current.parentId){current=items.find(x=>x.id===current.parentId); if(current&&itemSearchText(current).includes(term))return true}
+  return items.filter(x=>x.parentId===item.id).some(child=>matchesSearch(child,term));
+}
+
+function statusClass(status){
+  const key = String(status || "Not contacted").toLowerCase().replaceAll(" ", "-");
+  if(key === "not-contacted") return "status-not-contacted";
+  if(key === "invited") return "status-invited";
+  if(key === "confirmed") return "status-confirmed";
+  if(key === "maybe") return "status-maybe";
+  if(key === "not-coming") return "status-not-coming";
+  return "status-not-contacted";
+}
+
+function statusOptions(current){
+  const statuses = ["Not contacted", "Invited", "Confirmed", "Maybe", "Not coming"];
+  return statuses.map(status => `<option value="${esc(status)}" ${status === current ? "selected" : ""}>${esc(status)}</option>`).join("");
+}
+
+function updateStatus(id, value){
+  const item = items.find(x => x.id === id);
+  if(!item) return;
+  item.status = value;
+  persist();
+  render();
+}
+
+function rowInviteClass(item){
+  return ["Invited", "Confirmed"].includes(item.status) ? "row-invited" : "";
+}
+
+function phoneHref(phone){
+  return String(phone || "").replace(/[^\d+]/g, "");
+}
+
+function phoneLine(item){
+  if(!item.phone) return "";
+  return `<div class="contact-line">
+    <span class="contact-label">Phone</span>
+    <a class="contact-link" href="tel:${phoneHref(item.phone)}">${esc(item.phone)}</a>
+  </div>`;
+}
+
+function renderNode(item,term){
+  if(!matchesSearch(item,term))return"";
+  const children=buildTree(item.id).map(c=>renderNode(c,term)).filter(Boolean).join("");
+  const counted=getAdjustedGuestCount(item);
+  const deduction=getAlreadyCountedDeduction(item);
+  const selected=document.getElementById("editId").value===item.id?"selected":"";
+  return `
+    <li class="node">
+      <div class="node-card has-list-status ${selected} ${rowInviteClass(item)}">
+        <div>
+          <div class="list-top-row">
+            <div class="node-name">${esc(item.name)}</div>
+            <div class="list-status-corner">
+              <select class="status-inline ${statusClass(item.status)}" onchange="updateStatus('${item.id}', this.value)">
+                ${statusOptions(item.status)}
+              </select>
+              ${["Invited", "Confirmed"].includes(item.status) ? `<span class="status-check">✓</span>` : ""}
+            </div>
+          </div>
+          ${phoneLine(item)}
+          <div class="row-bottom">
+            <div class="meta">
+              ${adjustedMembersTag(item) ? `<span class="pill ${memberPillClass(item)}">${adjustedMembersTag(item)}</span>` : ""}
+            </div>
+            <div class="node-actions">
+              <button class="mini ghost" onclick="editItem('${item.id}')">Edit</button>
+              <button class="mini secondary" onclick="startAddUnder('${item.id}','child')">Add son/daughter family</button>
+              <button class="mini secondary" onclick="startAddUnder('${item.id}','inlaws')">Add in-laws</button>
+              <button class="mini danger" onclick="deleteItem('${item.id}')">Delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      ${children?`<ul>${children}</ul>`:""}
+    </li>`;
+}
+
+function renderFamilyNode(item,term){
+  if(!matchesSearch(item,term))return"";
+  const children=buildTree(item.id).map(c=>renderFamilyNode(c,term)).filter(Boolean).join("");
+  const counted=getAdjustedGuestCount(item);
+  const deduction=getAlreadyCountedDeduction(item);
+  const selected=document.getElementById("editId").value===item.id?"selected":"";
+  const hasChildrenClass = children ? "has-children" : "";
+  return `
+    <div class="org-tree ${hasChildrenClass}">
+      <div class="family-card ${selected} ${rowInviteClass(item)}" onclick="editItem('${item.id}')">
+        <div class="card-head">
+          <div class="title">${esc(item.name)}</div>
+          <div class="status-row" onclick="event.stopPropagation()">
+            ${["Invited", "Confirmed"].includes(item.status) ? `<span class="status-check">✓</span>` : ""}
+            <select class="status-inline ${statusClass(item.status)}" onchange="updateStatus('${item.id}', this.value)">
+              ${statusOptions(item.status)}
+            </select>
+          </div>
+        </div>
+        ${item.phone?`<div class="contact-line" onclick="event.stopPropagation()"><span class="contact-label">Phone</span><a class="contact-link" href="tel:${phoneHref(item.phone)}">${esc(item.phone)}</a></div>`:""}
+        <div class="meta">
+          ${adjustedMembersTag(item) ? `<span class="pill ${memberPillClass(item)}">${adjustedMembersTag(item)}</span>` : ""}
+        </div>
+      </div>
+      ${children?`<div class="org-children">${children}</div>`:""}
+    </div>`;
+}
+
+function isIncludedInInvitedTotal(status){
+  return ["Invited", "Confirmed", "Maybe"].includes(status);
+}
+
+function drawTreeConnectors(){
+  const canvas = document.querySelector(".family-canvas");
+  const svg = canvas?.querySelector(".tree-svg");
+  if(!canvas || !svg) return;
+
+  const base = canvas.getBoundingClientRect();
+  const forest = canvas.querySelector(".family-forest");
+  if(!forest) return;
+
+  const width = Math.max(canvas.scrollWidth, forest.scrollWidth, forest.getBoundingClientRect().width);
+  const height = Math.max(canvas.scrollHeight, forest.scrollHeight, forest.getBoundingClientRect().height);
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("width", width);
+  svg.setAttribute("height", height);
+  svg.innerHTML = "";
+
+  const makePath = (d) => {
+    const path = document.createElementNS("http://www.w3.org/2000/svg","path");
+    path.setAttribute("d", d);
+    svg.appendChild(path);
+  };
+
+  const directChildCards = (treeEl) => {
+    const childrenWrap = Array.from(treeEl.children).find(el => el.classList && el.classList.contains("org-children"));
+    if(!childrenWrap) return [];
+    return Array.from(childrenWrap.children)
+      .filter(el => el.classList && el.classList.contains("org-tree"))
+      .map(el => Array.from(el.children).find(c => c.classList && c.classList.contains("family-card")))
+      .filter(Boolean);
+  };
+
+  const parents = Array.from(canvas.querySelectorAll(".org-tree.has-children"));
+  parents.forEach(treeEl => {
+    const parentCard = Array.from(treeEl.children).find(el => el.classList && el.classList.contains("family-card"));
+    const childCards = directChildCards(treeEl);
+    if(!parentCard || !childCards.length) return;
+
+    const pb = parentCard.getBoundingClientRect();
+    const parentRight = Math.round(pb.right - base.left);
+    const parentY = Math.round(pb.top - base.top + pb.height / 2);
+
+    childCards.forEach(card => {
+      const cb = card.getBoundingClientRect();
+      const childLeft = Math.round(cb.left - base.left);
+      const childY = Math.round(cb.top - base.top + cb.height / 2);
+      const midX = Math.round(parentRight + (childLeft - parentRight) / 2);
+
+      // Sideways connector: parent right side → horizontal → vertical → child left side.
+      makePath(`M ${parentRight} ${parentY} H ${midX} V ${childY} H ${childLeft}`);
+    });
+  });
+}
+
+function enableTreePanning(){
+  const wrap = document.querySelector(".family-view-wrap");
+  if(!wrap || wrap.dataset.panReady === "1") return;
+
+  wrap.dataset.panReady = "1";
+  let isDown = false;
+  let startX = 0;
+  let startY = 0;
+  let startLeft = 0;
+  let startTop = 0;
+
+  const isInteractive = (target) => {
+    return target.closest("select, button, a, input, textarea");
+  };
+
+  wrap.addEventListener("pointerdown", (e) => {
+    if(isInteractive(e.target)) return;
+    isDown = true;
+    wrap.classList.add("dragging");
+    startX = e.clientX;
+    startY = e.clientY;
+    startLeft = wrap.scrollLeft;
+    startTop = wrap.scrollTop;
+    wrap.setPointerCapture(e.pointerId);
+  });
+
+  wrap.addEventListener("pointermove", (e) => {
+    if(!isDown) return;
+    e.preventDefault();
+    wrap.scrollLeft = startLeft - (e.clientX - startX);
+    wrap.scrollTop = startTop - (e.clientY - startY);
+  });
+
+  const stopDrag = () => {
+    isDown = false;
+    wrap.classList.remove("dragging");
+  };
+
+  wrap.addEventListener("pointerup", stopDrag);
+  wrap.addEventListener("pointercancel", stopDrag);
+  wrap.addEventListener("mouseleave", stopDrag);
+
+  // In sideways tree view, normal mouse-wheel movement pans horizontally.
+  wrap.addEventListener("wheel", (e) => {
+    const canScrollSideways = wrap.scrollWidth > wrap.clientWidth;
+    if(!canScrollSideways) return;
+
+    e.preventDefault();
+    wrap.scrollLeft += e.deltaY + e.deltaX;
+  }, { passive:false });
+}
+
+function toggleTreeFullscreen(){
+  const panel = document.querySelector(".tree-panel");
+  if(!panel) return;
+
+  if(!document.fullscreenElement){
+    panel.requestFullscreen?.().then(() => {
+      if(currentView === "family") {
+        setTimeout(() => {
+          drawTreeConnectors();
+          enableTreePanning();
+        }, 100);
+      }
+    }).catch(() => {
+      alert("Fullscreen is not available in this browser.");
+    });
+  } else {
+    document.exitFullscreen?.();
+  }
+}
+
+document.addEventListener("fullscreenchange", () => {
+  if(currentView === "family") {
+    setTimeout(drawTreeConnectors, 100);
+  }
+});
+
+function resetTreeScroll(){
+  const wrap = document.querySelector(".family-view-wrap");
+  if(!wrap) return;
+  wrap.scrollTo({left:0, top:0, behavior:"smooth"});
+  setTimeout(drawTreeConnectors, 250);
+}
+
+function render(){
+  refreshParentOptions();
+  const total=getInvitedTotal();
+  const allPeople=getTotalPeople();
+  document.getElementById("totalGuests").textContent=total;
+  document.getElementById("totalPeople").textContent=allPeople;
+  const term=document.getElementById("search").value.trim().toLowerCase();
+  const roots=buildTree("");
+  if(!roots.length){document.getElementById("treeRoot").innerHTML=`<div class="empty">No entries yet. Add Boro Aunty from the left, or click “Load example”.</div>`;return}
+  if(currentView==="family"){
+    const forest=roots.map(r=>renderFamilyNode(r,term)).filter(Boolean).join("");
+    document.getElementById("treeRoot").innerHTML=forest?`<div class="family-view-wrap" title="Drag to move the tree"><div class="family-canvas"><svg class="tree-svg" aria-hidden="true"></svg><div class="family-forest">${forest}</div></div></div>`:`<div class="empty">No matching results.</div>`;
+    if(forest){
+      requestAnimationFrame(()=>{
+        drawTreeConnectors();
+        enableTreePanning();
+      });
+    }
+  }else{
+    const list=roots.map(r=>renderNode(r,term)).filter(Boolean).join("");
+    document.getElementById("treeRoot").innerHTML=list?`<ul class="tree">${list}</ul>`:`<div class="empty">No matching results.</div>`;
+  }
+}
+
+function loadExample(){
+  if(items.length&&!confirm("This will add the example to your current list. Continue?"))return;
+  const aunt=uid(), son1=uid(), daughter1=uid();
+  items.push(
+    {
+      id:aunt,
+      name:"Boro Aunty household",
+      count:4,
+      phone:"01XXXXXXXXX",
+      parentId:"",
+      kind:"normal",
+      status:"Invited",
+      notes:"Main household count includes Boro Aunty, husband, son, and daughter. If this parent is not invited, invited child families count full."
+    },
+    {
+      id:son1,
+      name:"Son 1 family",
+      count:4,
+      phone:"",
+      parentId:aunt,
+      kind:"son",
+      status:"Invited",
+      notes:"Family count includes the son. App adds 3 because son is already counted in parent household."
+    },
+    {
+      id:daughter1,
+      name:"Daughter 1 family",
+      count:2,
+      phone:"",
+      parentId:aunt,
+      kind:"daughter",
+      status:"Invited",
+      notes:"Family count includes the daughter. App adds 1 because daughter is already counted in parent household."
+    }
+  );
+  persist(); resetForm(); render();
+}
+
+function clearAll(){if(confirm("Clear the full invitation list from this browser?")){items=[];persist();resetForm();render()}}
+function exportJSON(){downloadBlob(new Blob([JSON.stringify(items,null,2)],{type:"application/json"}),"wedding-invitation-family-tree.json")}
+function importJSON(e){
+  const file=e.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=()=>{try{const data=JSON.parse(reader.result); if(!Array.isArray(data))throw Error(); items=data.map(normalize); persist(); resetForm(); render(); alert("Import complete.")}catch{alert("Could not import a valid JSON file.")}};
+  reader.readAsText(file); e.target.value="";
+}
+function exportCSV(){
+  const headers=["Name","Members","Added To Total","Parent","Contact Number","Status"];
+  const rows=items.map(x=>{const p=items.find(y=>y.id===x.parentId);return[x.name,x.count,getCountValue(x),p?p.name:"",x.phone||"",x.status]});
+  const csv=[headers,...rows].map(r=>r.map(c=>`"${String(c).replaceAll('"','""')}"`).join(",")).join("\n");
+  downloadBlob(new Blob([csv],{type:"text/csv;charset=utf-8"}),"wedding-invitation-family-tree.csv");
+}
+function downloadBlob(blob,filename){const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url)}
+
+window.addEventListener("resize", ()=>{ if(currentView==="family") requestAnimationFrame(drawTreeConnectors); });
+
+render();
+</script>
+</body>
+</html>
