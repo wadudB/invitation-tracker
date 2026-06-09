@@ -536,7 +536,7 @@
     <select id="parent"><option value="">Main household</option></select>
 
     <label for="name">Name</label>
-    <input id="name" placeholder="Example: Boro Aunty household">
+    <input id="name" placeholder="">
 
     <div class="row">
       <div>
@@ -545,7 +545,7 @@
       </div>
       <div>
         <label for="phone">Contact number</label>
-        <input id="phone" inputmode="tel" placeholder="01XXXXXXXXX">
+        <input id="phone" inputmode="tel" placeholder="">
       </div>
     </div>
 
@@ -603,7 +603,7 @@
         </div>
         <div class="toolbar-right">
           <button class="ghost mini fullscreen-btn" onclick="toggleTreeFullscreen()">Fullscreen</button>
-          <input class="search" id="search" placeholder="Search name, phone, status..." oninput="render()">
+          <input class="search" id="search" placeholder="Search..." oninput="render()">
         </div>
       </div>
       <div id="treeRoot"></div>
@@ -612,7 +612,7 @@
 </main>
 
 <script>
-const STORAGE_KEY = "weddingInvitationTree.v59";
+const STORAGE_KEY = "weddingInvitationTree.v60";
 let items = load();
 let currentView = "list";
 
@@ -637,7 +637,7 @@ function normalize(item){
 }
 
 function load(){
-  for(const key of [STORAGE_KEY,"weddingInvitationTree.v58","weddingInvitationTree.v57","weddingInvitationTree.v56","weddingInvitationTree.v55","weddingInvitationTree.v54","weddingInvitationTree.v53","weddingInvitationTree.v52","weddingInvitationTree.v51","weddingInvitationTree.v50","weddingInvitationTree.v49","weddingInvitationTree.v48","weddingInvitationTree.v47","weddingInvitationTree.v46","weddingInvitationTree.v45","weddingInvitationTree.v44","weddingInvitationTree.v43","weddingInvitationTree.v42","weddingInvitationTree.v41","weddingInvitationTree.v40","weddingInvitationTree.v39","weddingInvitationTree.v38","weddingInvitationTree.v37","weddingInvitationTree.v36","weddingInvitationTree.v35","weddingInvitationTree.v34","weddingInvitationTree.v33","weddingInvitationTree.v32","weddingInvitationTree.v31","weddingInvitationTree.v30","weddingInvitationTree.v29","weddingInvitationTree.v28","weddingInvitationTree.v27","weddingInvitationTree.v26","weddingInvitationTree.v25","weddingInvitationTree.v24","weddingInvitationTree.v23","weddingInvitationTree.v22","weddingInvitationTree.v21","weddingInvitationTree.v20","weddingInvitationTree.v19","weddingInvitationTree.v18","weddingInvitationTree.v17","weddingInvitationTree.v16","weddingInvitationTree.v15","weddingInvitationTree.v14","weddingInvitationTree.v13","weddingInvitationTree.v12","weddingInvitationTree.v11","weddingInvitationTree.v10","weddingInvitationTree.v9","weddingInvitationTree.v8","weddingInvitationTree.v7","weddingInvitationTree.v6","weddingInvitationTree.v5","weddingInvitationTree.v4","weddingInvitationTree.v3","weddingInvitationTree.v2","weddingInvitationTree.v1"]){
+  for(const key of [STORAGE_KEY,"weddingInvitationTree.v59","weddingInvitationTree.v58","weddingInvitationTree.v57","weddingInvitationTree.v56","weddingInvitationTree.v55","weddingInvitationTree.v54","weddingInvitationTree.v53","weddingInvitationTree.v52","weddingInvitationTree.v51","weddingInvitationTree.v50","weddingInvitationTree.v49","weddingInvitationTree.v48","weddingInvitationTree.v47","weddingInvitationTree.v46","weddingInvitationTree.v45","weddingInvitationTree.v44","weddingInvitationTree.v43","weddingInvitationTree.v42","weddingInvitationTree.v41","weddingInvitationTree.v40","weddingInvitationTree.v39","weddingInvitationTree.v38","weddingInvitationTree.v37","weddingInvitationTree.v36","weddingInvitationTree.v35","weddingInvitationTree.v34","weddingInvitationTree.v33","weddingInvitationTree.v32","weddingInvitationTree.v31","weddingInvitationTree.v30","weddingInvitationTree.v29","weddingInvitationTree.v28","weddingInvitationTree.v27","weddingInvitationTree.v26","weddingInvitationTree.v25","weddingInvitationTree.v24","weddingInvitationTree.v23","weddingInvitationTree.v22","weddingInvitationTree.v21","weddingInvitationTree.v20","weddingInvitationTree.v19","weddingInvitationTree.v18","weddingInvitationTree.v17","weddingInvitationTree.v16","weddingInvitationTree.v15","weddingInvitationTree.v14","weddingInvitationTree.v13","weddingInvitationTree.v12","weddingInvitationTree.v11","weddingInvitationTree.v10","weddingInvitationTree.v9","weddingInvitationTree.v8","weddingInvitationTree.v7","weddingInvitationTree.v6","weddingInvitationTree.v5","weddingInvitationTree.v4","weddingInvitationTree.v3","weddingInvitationTree.v2","weddingInvitationTree.v1"]){
     try{const data=JSON.parse(localStorage.getItem(key)); if(Array.isArray(data)) return data.map(normalize)}catch{}
   }
   return [];
@@ -881,7 +881,7 @@ function startAddUnder(parentId,type){
   if(type==="child"){
     document.getElementById("formTitle").textContent="Add son/daughter family";
     document.getElementById("entryKind").value="child";
-    document.getElementById("name").placeholder="Example: Bappy bhaiya family";
+    document.getElementById("name").placeholder="";
     document.getElementById("count").value=0;
     }
 
@@ -910,7 +910,7 @@ function resetForm(){
   document.getElementById("entryKind").value="normal";
   document.getElementById("parent").value="";
   document.getElementById("name").value="";
-  document.getElementById("name").placeholder="Example: Boro Aunty household";
+  document.getElementById("name").placeholder="";
   document.getElementById("count").value=2;
   document.getElementById("phone").value="";
   document.getElementById("autoSons").value=0;
@@ -1189,7 +1189,7 @@ function render(){
   document.getElementById("totalPeople").textContent=allPeople;
   const term=document.getElementById("search").value.trim().toLowerCase();
   const roots=buildTree("");
-  if(!roots.length){document.getElementById("treeRoot").innerHTML=`<div class="empty">No entries yet. Add Boro Aunty from the left, or click “Load example”.</div>`;return}
+  if(!roots.length){document.getElementById("treeRoot").innerHTML=`<div class="empty">No entries yet. Add Main household from the left, or click “Load example”.</div>`;return}
   if(currentView==="family"){
     const forest=roots.map(r=>renderFamilyNode(r,term)).filter(Boolean).join("");
     document.getElementById("treeRoot").innerHTML=forest?`<div class="family-view-wrap" title="Drag to move the tree"><div class="family-canvas"><svg class="tree-svg" aria-hidden="true"></svg><div class="family-forest">${forest}</div></div></div>`:`<div class="empty">No matching results.</div>`;
@@ -1211,13 +1211,13 @@ function loadExample(){
   items.push(
     {
       id:aunt,
-      name:"Boro Aunty household",
+      name:"Main household",
       count:4,
-      phone:"01XXXXXXXXX",
+      phone:"",
       parentId:"",
       kind:"normal",
       status:"Invited",
-      notes:"Main household count includes Boro Aunty, husband, son, and daughter. If this parent is not invited, invited child families count full."
+      notes:"Main household count includes Main household, husband, son, and daughter. If this parent is not invited, invited child families count full."
     },
     {
       id:son1,
@@ -1231,7 +1231,7 @@ function loadExample(){
     },
     {
       id:daughter1,
-      name:"Daughter 1 family",
+      name:"Family member",
       count:2,
       phone:"",
       parentId:aunt,
