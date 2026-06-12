@@ -31,6 +31,10 @@
     .primary{background:var(--brand);color:#fff}.secondary{background:#efe5df;color:var(--text)}.ghost{background:transparent;color:var(--brand);border:1px solid var(--line)}.danger{background:#fee4e2;color:var(--danger)}.mini{font-size:12px;padding:7px 10px}
     .helpbox{background:#fffaf7;border:1px solid var(--line);border-radius:14px;padding:12px;margin:12px 0 16px;color:var(--muted);font-size:13px;line-height:1.45}
     .helpbox b{color:var(--text)}
+    .event-box{background:#fffaf7;border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:16px}
+    .event-box .section-title{margin-bottom:8px}
+    .event-box .buttons{margin-top:12px}
+    .event-badge{display:inline-flex;align-items:center;max-width:260px;padding:5px 9px;border-radius:999px;background:#fff4ed;color:var(--brand);font-size:12px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .right{display:grid;gap:18px}
     .summary{
       display:grid;
@@ -137,6 +141,10 @@
       align-items:center;
       gap:8px;
       flex-shrink:0;
+    }
+    .list-status-corner .collapse-btn,
+    .status-row .collapse-btn{
+      margin-top:0;
     }
     .node-card.has-list-status{
       padding-top:13px;
@@ -304,6 +312,74 @@
       min-width:0;
       flex:1;
       overflow-wrap:break-word;
+    }
+    .family-title-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      min-width:0;
+    }
+    .collapse-btn{
+      flex:0 0 auto;
+      width:30px;
+      min-width:30px;
+      height:30px;
+      padding:0 !important;
+      box-sizing:border-box;
+      border-radius:999px;
+      background:#fff4ed;
+      color:var(--brand);
+      border:1px solid var(--line);
+      font-size:18px;
+      font-weight:950;
+      line-height:1;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      vertical-align:middle;
+      font-family:Arial, sans-serif;
+    }
+    .collapse-icon{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:100%;
+      height:100%;
+      line-height:1;
+      transform:translateY(-1px);
+      pointer-events:none;
+    }
+    .collapse-btn:hover{
+      background:#fce7f3;
+      border-color:var(--brand2);
+    }
+    .branch-total-pill{
+      background:#eef4ff;
+      color:#31527a;
+    }
+    .branch-invited-pill{
+      background:#dcfae6;
+      color:#087443;
+    }
+    .hidden-pill{
+      background:#fff4d6;
+      color:#92400e;
+    }
+    .hidden-count-inline{
+      background:#fff4d6;
+      color:#92400e;
+      border:1px solid #f5d680;
+      border-radius:999px;
+      padding:5px 9px;
+      font-size:12px;
+      font-weight:900;
+      white-space:nowrap;
+      line-height:1;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
     }
     .family-card .status-inline{
       min-width:140px;
@@ -528,6 +604,18 @@
 
 <main class="app">
   <aside class="panel">
+    <div class="event-box">
+      <h2 class="section-title">Event</h2>
+      <label for="eventSelect">Current event</label>
+      <select id="eventSelect" onchange="switchEvent(this.value)"></select>
+      <div class="buttons">
+        <button class="secondary" onclick="createEventPrompt()">New event</button>
+        <button class="ghost" onclick="duplicateCurrentEvent()">Duplicate event</button>
+        <button class="ghost" onclick="renameEventPrompt()">Rename</button>
+        <button class="danger" onclick="deleteCurrentEvent()">Delete event</button>
+      </div>
+    </div>
+
     <h2 class="section-title" id="formTitle">Add entry</h2>
     <input type="hidden" id="editId">
     <input type="hidden" id="entryKind" value="normal">
@@ -571,12 +659,13 @@
     <h2 class="section-title">Backup / Export</h2>
     <div class="buttons">
       <button class="secondary" onclick="exportJSON()">Export data</button>
+      <button class="secondary" onclick="exportAllEvents()">Export all events</button>
       <button class="secondary" onclick="exportCSV()">Export CSV</button>
       <button class="ghost" onclick="document.getElementById('importFile').click()">Import data</button>
-      <button class="danger" onclick="clearAll()">Clear all</button>
+      <button class="danger" onclick="clearAll()">Clear event</button>
     </div>
     <input id="importFile" class="file-input" type="file" accept=".json" onchange="importJSON(event)">
-    <div class="footer-note">Export your data to use it later.</div>
+    <div class="footer-note">Use events to keep separate invitation lists. Export your data to use it later.</div>
   </aside>
 
   <section class="right">
@@ -595,6 +684,7 @@
       <div class="toolbar">
         <div class="toolbar-left">
           <h2 class="section-title" style="margin:0">Invitation view</h2>
+          <span class="event-badge" id="currentEventName"></span>
           <div class="view-toggle">
             <button id="listViewBtn" class="active" onclick="setView('list')">List view</button>
             <button id="familyViewBtn" onclick="setView('family')">Tree view</button>
@@ -612,8 +702,11 @@
 </main>
 
 <script>
-const STORAGE_KEY = "weddingInvitationTree.v60";
-let items = load();
+const EVENT_STORAGE_KEY = "invitationTracker.events";
+const LEGACY_STORAGE_KEYS = ["weddingInvitationTree.v68","weddingInvitationTree.v67","weddingInvitationTree.v66","weddingInvitationTree.v65","weddingInvitationTree.v64","weddingInvitationTree.v63","weddingInvitationTree.v62","weddingInvitationTree.v61","weddingInvitationTree.v60","weddingInvitationTree.v59","weddingInvitationTree.v58","weddingInvitationTree.v57","weddingInvitationTree.v56","weddingInvitationTree.v55","weddingInvitationTree.v54","weddingInvitationTree.v53","weddingInvitationTree.v52","weddingInvitationTree.v51","weddingInvitationTree.v50","weddingInvitationTree.v49","weddingInvitationTree.v48","weddingInvitationTree.v47","weddingInvitationTree.v46","weddingInvitationTree.v45","weddingInvitationTree.v44","weddingInvitationTree.v43","weddingInvitationTree.v42","weddingInvitationTree.v41","weddingInvitationTree.v40","weddingInvitationTree.v39","weddingInvitationTree.v38","weddingInvitationTree.v37","weddingInvitationTree.v36","weddingInvitationTree.v35","weddingInvitationTree.v34","weddingInvitationTree.v33","weddingInvitationTree.v32","weddingInvitationTree.v31","weddingInvitationTree.v30","weddingInvitationTree.v29","weddingInvitationTree.v28","weddingInvitationTree.v27","weddingInvitationTree.v26","weddingInvitationTree.v25","weddingInvitationTree.v24","weddingInvitationTree.v23","weddingInvitationTree.v22","weddingInvitationTree.v21","weddingInvitationTree.v20","weddingInvitationTree.v19","weddingInvitationTree.v18","weddingInvitationTree.v17","weddingInvitationTree.v16","weddingInvitationTree.v15","weddingInvitationTree.v14","weddingInvitationTree.v13","weddingInvitationTree.v12","weddingInvitationTree.v11","weddingInvitationTree.v10","weddingInvitationTree.v9","weddingInvitationTree.v8","weddingInvitationTree.v7","weddingInvitationTree.v6","weddingInvitationTree.v5","weddingInvitationTree.v4","weddingInvitationTree.v3","weddingInvitationTree.v2","weddingInvitationTree.v1"];
+let appState = loadEventState();
+let currentEventId = appState.currentEventId;
+let items = currentEvent().items;
 let currentView = "list";
 
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
@@ -636,14 +729,167 @@ function normalize(item){
   };
 }
 
-function load(){
-  for(const key of [STORAGE_KEY,"weddingInvitationTree.v59","weddingInvitationTree.v58","weddingInvitationTree.v57","weddingInvitationTree.v56","weddingInvitationTree.v55","weddingInvitationTree.v54","weddingInvitationTree.v53","weddingInvitationTree.v52","weddingInvitationTree.v51","weddingInvitationTree.v50","weddingInvitationTree.v49","weddingInvitationTree.v48","weddingInvitationTree.v47","weddingInvitationTree.v46","weddingInvitationTree.v45","weddingInvitationTree.v44","weddingInvitationTree.v43","weddingInvitationTree.v42","weddingInvitationTree.v41","weddingInvitationTree.v40","weddingInvitationTree.v39","weddingInvitationTree.v38","weddingInvitationTree.v37","weddingInvitationTree.v36","weddingInvitationTree.v35","weddingInvitationTree.v34","weddingInvitationTree.v33","weddingInvitationTree.v32","weddingInvitationTree.v31","weddingInvitationTree.v30","weddingInvitationTree.v29","weddingInvitationTree.v28","weddingInvitationTree.v27","weddingInvitationTree.v26","weddingInvitationTree.v25","weddingInvitationTree.v24","weddingInvitationTree.v23","weddingInvitationTree.v22","weddingInvitationTree.v21","weddingInvitationTree.v20","weddingInvitationTree.v19","weddingInvitationTree.v18","weddingInvitationTree.v17","weddingInvitationTree.v16","weddingInvitationTree.v15","weddingInvitationTree.v14","weddingInvitationTree.v13","weddingInvitationTree.v12","weddingInvitationTree.v11","weddingInvitationTree.v10","weddingInvitationTree.v9","weddingInvitationTree.v8","weddingInvitationTree.v7","weddingInvitationTree.v6","weddingInvitationTree.v5","weddingInvitationTree.v4","weddingInvitationTree.v3","weddingInvitationTree.v2","weddingInvitationTree.v1"]){
-    try{const data=JSON.parse(localStorage.getItem(key)); if(Array.isArray(data)) return data.map(normalize)}catch{}
+function normalizeEvent(event, fallbackName="Wedding event"){
+  return {
+    id: event.id || uid(),
+    name: String(event.name || fallbackName).trim() || fallbackName,
+    items: Array.isArray(event.items) ? event.items.map(normalize) : [],
+    collapsedIds: Array.isArray(event.collapsedIds) ? event.collapsedIds : [],
+    createdAt: event.createdAt || new Date().toISOString(),
+    updatedAt: event.updatedAt || new Date().toISOString()
+  };
+}
+
+function makeEvent(name="Wedding event", eventItems=[]){
+  return normalizeEvent({id:uid(), name, items:eventItems, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString()}, name);
+}
+
+function normalizeEventState(data){
+  let events = [];
+  if(data && Array.isArray(data.events)){
+    events = data.events.map((event, index) => normalizeEvent(event, `Event ${index + 1}`));
+  }
+
+  if(!events.length){
+    events = [makeEvent("Wedding event", [])];
+  }
+
+  let selected = data?.currentEventId || events[0].id;
+  if(!events.some(event => event.id === selected)) selected = events[0].id;
+
+  return {version:1, currentEventId:selected, events};
+}
+
+function loadLegacyItems(){
+  for(const key of LEGACY_STORAGE_KEYS){
+    try{
+      const data = JSON.parse(localStorage.getItem(key));
+      if(Array.isArray(data)) return data.map(normalize);
+    }catch{}
   }
   return [];
 }
 
-function persist(){localStorage.setItem(STORAGE_KEY,JSON.stringify(items))}
+function loadEventState(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(EVENT_STORAGE_KEY));
+    if(saved && Array.isArray(saved.events)) return normalizeEventState(saved);
+  }catch{}
+
+  const legacyItems = loadLegacyItems();
+  const initial = {version:1, currentEventId:"", events:[makeEvent("Wedding event", legacyItems)]};
+  initial.currentEventId = initial.events[0].id;
+  try{localStorage.setItem(EVENT_STORAGE_KEY, JSON.stringify(initial));}catch{}
+  return initial;
+}
+
+function currentEvent(){
+  let event = appState.events.find(x => x.id === currentEventId) || appState.events[0];
+  if(!event){
+    event = makeEvent("Wedding event", []);
+    appState.events.push(event);
+    currentEventId = event.id;
+  }
+  return event;
+}
+
+function persist(){
+  const event = currentEvent();
+  event.items = items.map(normalize);
+  event.updatedAt = new Date().toISOString();
+  appState.currentEventId = currentEventId;
+  localStorage.setItem(EVENT_STORAGE_KEY, JSON.stringify(appState));
+}
+
+function renderEventOptions(){
+  const select = document.getElementById("eventSelect");
+  const badge = document.getElementById("currentEventName");
+  if(!select) return;
+
+  const event = currentEvent();
+  select.innerHTML = appState.events.map(x => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("");
+  select.value = event.id;
+  if(badge) badge.textContent = event.name;
+}
+
+function switchEvent(eventId){
+  if(!appState.events.some(x => x.id === eventId)) return;
+  persist();
+  currentEventId = eventId;
+  appState.currentEventId = eventId;
+  items = currentEvent().items;
+  try{localStorage.setItem(EVENT_STORAGE_KEY, JSON.stringify(appState));}catch{}
+  resetForm();
+}
+
+function createEventPrompt(){
+  const name = prompt("Event name", "New event");
+  if(!name || !name.trim()) return;
+  persist();
+  const event = makeEvent(name.trim(), []);
+  appState.events.push(event);
+  currentEventId = event.id;
+  appState.currentEventId = currentEventId;
+  items = event.items;
+  persist();
+  resetForm();
+}
+
+function duplicateCurrentEvent(){
+  persist();
+
+  const source = currentEvent();
+  const name = prompt("Duplicate event name", `${source.name} copy`);
+  if(!name || !name.trim()) return;
+
+  const idMap = {};
+  const copiedItems = source.items.map(item => {
+    const newId = uid();
+    idMap[item.id] = newId;
+    return {
+      ...item,
+      id: newId,
+      parentId: item.parentId || ""
+    };
+  }).map(item => ({
+    ...item,
+    parentId: item.parentId && idMap[item.parentId] ? idMap[item.parentId] : ""
+  }));
+
+  const event = makeEvent(name.trim(), copiedItems);
+  appState.events.push(event);
+  currentEventId = event.id;
+  appState.currentEventId = currentEventId;
+  items = event.items;
+
+  persist();
+  resetForm();
+}
+
+function renameEventPrompt(){
+  const event = currentEvent();
+  const name = prompt("Rename event", event.name);
+  if(!name || !name.trim()) return;
+  event.name = name.trim();
+  persist();
+  render();
+}
+
+function deleteCurrentEvent(){
+  const event = currentEvent();
+  if(appState.events.length <= 1){
+    alert("You need at least one event.");
+    return;
+  }
+  if(!confirm(`Delete event "${event.name}" and all entries inside it?`)) return;
+  appState.events = appState.events.filter(x => x.id !== event.id);
+  currentEventId = appState.events[0].id;
+  appState.currentEventId = currentEventId;
+  items = currentEvent().items;
+  persist();
+  resetForm();
+}
+
 function getCountValue(item){return Math.max(0, Number(item.count || 0))}
 
 function isSonOrDaughter(item){
@@ -719,6 +965,68 @@ function getAllPeopleAdjustedCount(item){
 
 function getTotalPeople(){
   return items.reduce((sum, item) => sum + getAllPeopleAdjustedCount(item), 0);
+}
+
+function peopleLabel(count){
+  return `${count} ${count === 1 ? "person" : "people"}`;
+}
+
+function branchItems(item){
+  const result = [];
+  const seen = new Set();
+  const walk = (node) => {
+    if(!node || seen.has(node.id)) return;
+    seen.add(node.id);
+    result.push(node);
+    items
+      .filter(child => (child.parentId || "") === node.id)
+      .forEach(walk);
+  };
+  walk(item);
+  return result;
+}
+
+function branchTotals(item){
+  const branch = branchItems(item);
+  return {
+    people: branch.reduce((sum, row) => sum + getAllPeopleAdjustedCount(row), 0),
+    invited: branch.reduce((sum, row) => sum + getAdjustedGuestCount(row), 0),
+    hiddenRows: Math.max(0, branch.length - 1)
+  };
+}
+
+function getCollapsedIds(){
+  const event = currentEvent();
+  if(!Array.isArray(event.collapsedIds)) event.collapsedIds = [];
+  return event.collapsedIds;
+}
+
+function isBranchCollapsed(id){
+  return getCollapsedIds().includes(id);
+}
+
+function shouldShowParentHouseholdTotals(item){
+  return !(item.parentId || "");
+}
+
+function toggleBranchCollapse(id, ev){
+  if(ev) ev.stopPropagation();
+
+  const ids = getCollapsedIds();
+  const index = ids.indexOf(id);
+
+  if(index >= 0){
+    ids.splice(index, 1);
+  } else {
+    ids.push(id);
+  }
+
+  persist();
+  render();
+
+  if(currentView === "family"){
+    requestAnimationFrame(drawTreeConnectors);
+  }
 }
 
 function addedMembersText(item){
@@ -976,10 +1284,14 @@ function phoneLine(item){
 
 function renderNode(item,term){
   if(!matchesSearch(item,term))return"";
-  const children=buildTree(item.id).map(c=>renderNode(c,term)).filter(Boolean).join("");
-  const counted=getAdjustedGuestCount(item);
-  const deduction=getAlreadyCountedDeduction(item);
+
+  const childItems = buildTree(item.id);
+  const hasRealChildren = childItems.length > 0;
+  const collapsed = !term && hasRealChildren && isBranchCollapsed(item.id);
+  const children = collapsed ? "" : childItems.map(c=>renderNode(c,term)).filter(Boolean).join("");
   const selected=document.getElementById("editId").value===item.id?"selected":"";
+  const totals = branchTotals(item);
+
   return `
     <li class="node">
       <div class="node-card has-list-status ${selected} ${rowInviteClass(item)}">
@@ -987,16 +1299,21 @@ function renderNode(item,term){
           <div class="list-top-row">
             <div class="node-name">${esc(item.name)}</div>
             <div class="list-status-corner">
+              ${collapsed && totals.hiddenRows ? `<span class="hidden-count-inline">${totals.hiddenRows} hidden</span>` : ""}
+              ${hasRealChildren ? `<button class="collapse-btn" title="${collapsed ? "Expand household" : "Minimize household"}" onclick="toggleBranchCollapse('${item.id}', event)"><span class="collapse-icon">${collapsed ? "+" : "−"}</span></button>` : ""}
+              ${["Invited", "Confirmed"].includes(item.status) ? `<span class="status-check">✓</span>` : ""}
               <select class="status-inline ${statusClass(item.status)}" onchange="updateStatus('${item.id}', this.value)">
                 ${statusOptions(item.status)}
               </select>
-              ${["Invited", "Confirmed"].includes(item.status) ? `<span class="status-check">✓</span>` : ""}
             </div>
           </div>
           ${phoneLine(item)}
           <div class="row-bottom">
             <div class="meta">
               ${adjustedMembersTag(item) ? `<span class="pill ${memberPillClass(item)}">${adjustedMembersTag(item)}</span>` : ""}
+              ${shouldShowParentHouseholdTotals(item) ? `<span class="pill branch-total-pill">Household total: ${peopleLabel(totals.people)}</span>` : ""}
+              ${shouldShowParentHouseholdTotals(item) ? `<span class="pill branch-invited-pill">Invited: ${peopleLabel(totals.invited)}</span>` : ""}
+    
             </div>
             <div class="node-actions">
               <button class="mini ghost" onclick="editItem('${item.id}')">Edit</button>
@@ -1013,17 +1330,26 @@ function renderNode(item,term){
 
 function renderFamilyNode(item,term){
   if(!matchesSearch(item,term))return"";
-  const children=buildTree(item.id).map(c=>renderFamilyNode(c,term)).filter(Boolean).join("");
-  const counted=getAdjustedGuestCount(item);
-  const deduction=getAlreadyCountedDeduction(item);
+
+  const childItems = buildTree(item.id);
+  const hasRealChildren = childItems.length > 0;
+  const collapsed = !term && hasRealChildren && isBranchCollapsed(item.id);
+  const children = collapsed ? "" : childItems.map(c=>renderFamilyNode(c,term)).filter(Boolean).join("");
+
   const selected=document.getElementById("editId").value===item.id?"selected":"";
   const hasChildrenClass = children ? "has-children" : "";
+  const totals = branchTotals(item);
+
   return `
     <div class="org-tree ${hasChildrenClass}">
       <div class="family-card ${selected} ${rowInviteClass(item)}" onclick="editItem('${item.id}')">
         <div class="card-head">
-          <div class="title">${esc(item.name)}</div>
+          <div class="family-title-row">
+            <div class="title">${esc(item.name)}</div>
+          </div>
           <div class="status-row" onclick="event.stopPropagation()">
+            ${collapsed && totals.hiddenRows ? `<span class="hidden-count-inline">${totals.hiddenRows} hidden</span>` : ""}
+            ${hasRealChildren ? `<button class="collapse-btn" title="${collapsed ? "Expand household" : "Minimize household"}" onclick="toggleBranchCollapse('${item.id}', event)"><span class="collapse-icon">${collapsed ? "+" : "−"}</span></button>` : ""}
             ${["Invited", "Confirmed"].includes(item.status) ? `<span class="status-check">✓</span>` : ""}
             <select class="status-inline ${statusClass(item.status)}" onchange="updateStatus('${item.id}', this.value)">
               ${statusOptions(item.status)}
@@ -1033,6 +1359,9 @@ function renderFamilyNode(item,term){
         ${item.phone?`<div class="contact-line" onclick="event.stopPropagation()"><span class="contact-label">Phone</span><a class="contact-link" href="tel:${phoneHref(item.phone)}">${esc(item.phone)}</a></div>`:""}
         <div class="meta">
           ${adjustedMembersTag(item) ? `<span class="pill ${memberPillClass(item)}">${adjustedMembersTag(item)}</span>` : ""}
+          ${shouldShowParentHouseholdTotals(item) ? `<span class="pill branch-total-pill">Household total: ${peopleLabel(totals.people)}</span>` : ""}
+          ${shouldShowParentHouseholdTotals(item) ? `<span class="pill branch-invited-pill">Invited: ${peopleLabel(totals.invited)}</span>` : ""}
+
         </div>
       </div>
       ${children?`<div class="org-children">${children}</div>`:""}
@@ -1182,6 +1511,7 @@ function resetTreeScroll(){
 }
 
 function render(){
+  renderEventOptions();
   refreshParentOptions();
   const total=getInvitedTotal();
   const allPeople=getTotalPeople();
@@ -1206,7 +1536,7 @@ function render(){
 }
 
 function loadExample(){
-  if(items.length&&!confirm("This will add the example to your current list. Continue?"))return;
+  if(items.length&&!confirm("This will add the example to your current event. Continue?"))return;
   const aunt=uid(), son1=uid(), daughter1=uid();
   items.push(
     {
@@ -1243,19 +1573,64 @@ function loadExample(){
   persist(); resetForm(); render();
 }
 
-function clearAll(){if(confirm("Clear the full invitation list from this browser?")){items=[];persist();resetForm();render()}}
-function exportJSON(){downloadBlob(new Blob([JSON.stringify(items,null,2)],{type:"application/json"}),"wedding-invitation-family-tree.json")}
+function clearAll(){
+  if(confirm(`Clear all entries from "${currentEvent().name}"?`)){
+    items=[];
+    persist();
+    resetForm();
+    render();
+  }
+}
+
+function exportJSON(){
+  const event = currentEvent();
+  downloadBlob(new Blob([JSON.stringify(items,null,2)],{type:"application/json"}),`${event.name.replace(/[^a-z0-9]+/gi,"-").replace(/^-|-$/g,"").toLowerCase() || "event"}-invitation-data.json`);
+}
+
+function exportAllEvents(){
+  persist();
+  downloadBlob(new Blob([JSON.stringify(appState,null,2)],{type:"application/json"}),"invitation-tracker-all-events.json");
+}
+
 function importJSON(e){
   const file=e.target.files[0]; if(!file)return;
   const reader=new FileReader();
-  reader.onload=()=>{try{const data=JSON.parse(reader.result); if(!Array.isArray(data))throw Error(); items=data.map(normalize); persist(); resetForm(); render(); alert("Import complete.")}catch{alert("Could not import a valid JSON file.")}};
+  reader.onload=()=>{
+    try{
+      const data=JSON.parse(reader.result);
+
+      if(Array.isArray(data)){
+        items=data.map(normalize);
+        persist();
+        resetForm();
+        render();
+        alert("Import complete for the current event.");
+        return;
+      }
+
+      if(data && Array.isArray(data.events)){
+        appState = normalizeEventState(data);
+        currentEventId = appState.currentEventId;
+        items = currentEvent().items;
+        persist();
+        resetForm();
+        render();
+        alert("All events imported.");
+        return;
+      }
+
+      throw Error();
+    }catch{
+      alert("Could not import a valid JSON file.");
+    }
+  };
   reader.readAsText(file); e.target.value="";
 }
 function exportCSV(){
   const headers=["Name","Members","Added To Total","Parent","Contact Number","Status"];
   const rows=items.map(x=>{const p=items.find(y=>y.id===x.parentId);return[x.name,x.count,getCountValue(x),p?p.name:"",x.phone||"",x.status]});
   const csv=[headers,...rows].map(r=>r.map(c=>`"${String(c).replaceAll('"','""')}"`).join(",")).join("\n");
-  downloadBlob(new Blob([csv],{type:"text/csv;charset=utf-8"}),"wedding-invitation-family-tree.csv");
+  downloadBlob(new Blob([csv],{type:"text/csv;charset=utf-8"}),`${currentEvent().name.replace(/[^a-z0-9]+/gi,"-").replace(/^-|-$/g,"").toLowerCase() || "event"}-invitation-data.csv`);
 }
 function downloadBlob(blob,filename){const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url)}
 
